@@ -1,11 +1,13 @@
-const express = require('express');
-const router = express.Router();
-const controller = require('../controllers/car.controller');
+const express = require('express')
+const ctrl = require('../controllers/car.controller')
+const router = express.Router()
 
-router.get('/', controller.getAll);
-router.post('/', controller.create);
-router.get('/:id', controller.getById);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
+router.route('/')
+  .get(ctrl.getAll)
+  .post(ctrl.create)
 
-module.exports = router;
+router.route('/:id')
+  .put(ctrl.update)
+  .delete(ctrl.remove)
+
+module.exports = router

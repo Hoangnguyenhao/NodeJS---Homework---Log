@@ -1,17 +1,16 @@
-const mongoose = require('mongoose');
-const logger = require('../middlewares/logger');
+const mongoose = require('mongoose')
 
-const connectDB = async () => {
+async function connectDB() {
   try {
-    await mongoose.connect('mongodb://localhost:27017/garage', {
+    await mongoose.connect('mongodb://127.0.0.1:27017/carDB', {
       useNewUrlParser: true,
       useUnifiedTopology: true
-    });
-    logger.info('Connected to MongoDB successfully');
+    })
+    console.log('MongoDB connected')
   } catch (err) {
-    logger.error(`MongoDB connection error: ${err.message}`);
-    process.exit(1);
+    console.error('MongoDB error:', err.message)
+    process.exit(1)
   }
-};
+}
 
-module.exports = connectDB;
+module.exports = connectDB

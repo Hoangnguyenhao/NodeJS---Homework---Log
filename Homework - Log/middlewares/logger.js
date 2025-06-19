@@ -1,30 +1,37 @@
-const { createLogger, format, transports } = require('winston');
-const fs = require('fs');
-const path = require('path');
-const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
-const logPath = path.join(__dirname, `../logs/${today}.log`);
+const fs = require('fs')
+const path = require('path')
 
-if (!fs.existsSync(path.dirname(logPath))) {
-  fs.mkdirSync(path.dirname(logPath), { recursive: true });
+const logDir = path.join(__dirname, '../logs')
+if (!fs.existsSync(logDir)) fs.mkdirSync(logDir)
+
+function formatDate(date = new Date()) {
+  const d = date
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-const logger = createLogger({
-  level: 'info',
-  format: format.combine(
-    format.timestamp({ format: 'DD-MM-YYYY HH:mm:ss' }),
-    format.printf(({ timestamp, level, message }) => {
-      return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
-    })
-  ),
-  transports: [new transports.File({ filename: logPath })]
-});
+function writeLog(fileName, content) {
+  const filePath = path.join(logDir, `${fileName}-${formatDate()}.log`)
+  fs.appendFile(filePath, content + '\n', () => {})
+}
 
-const requestLogger = (req, res, next) => {
-  logger.info(`${req.method} ${req.originalUrl}`);
-  next();
-};
+function requestLogger(req, res, next) {
+  const start = Date.now()
+  const { method, originalUrl, ip, headers, body } = req
 
-module.exports = requestLogger;
-module.exports.info = (msg) => logger.info(msg);
-module.exports.warn = (msg) => logger.warn(msg);
-module.exports.error = (msg) => logger.error(msg);
+  res.on('finish', () => {
+    const duration = Date.now() - start
+    const log = `[${new Date().toISOString()}] ${method} ${originalUrl} - ${res.statusCode} - ${ip} - ${headers['user-agent']} - ${duration}ms\nPayload: ${JSON.stringify(body)}`
+    writeLog('access', log)
+  })
+
+  next()
+}
+
+function errorLogger(err, req, res, next) {
+  const { method, originalUrl, ip, headers, body } = req
+  const log = `[${new Date().toISOString()}] ERROR ${method} ${originalUrl} - ${ip} - ${headers['user-agent']}\nPayload: ${JSON.stringify(body)}\nMessage: ${err.message}`
+  writeLog('error', log)
+  next(err)
+}
+
+module.exports = { requestLogger, errorLogger }

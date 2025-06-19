@@ -1,12 +1,16 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const app = express();
-const carRoutes = require('./routes/car.routes');
-const logger = require('./middlewares/logger');
-const connectDB = require('./config/db');
+const express = require('express')
+const connectDB = require('./config/db')
+const carRouter = require('./routes/car.routes')
+const { requestLogger } = require('./middlewares/logger')
+const { errorHandler } = require('./middlewares/errorHandler')
 
-connectDB();
-app.use(express.json());
-app.use(logger);
-app.use('/api/cars', carRoutes);
-app.listen(3000);
+const app = express()
+const PORT = process.env.PORT || 3000
+
+connectDB()
+app.use(express.json())
+app.use(requestLogger)
+app.use('/api/cars', carRouter)
+app.use(errorHandler)
+
+app.listen(PORT, () => console.log(`Car API running on port ${PORT}`))

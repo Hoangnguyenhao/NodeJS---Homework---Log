@@ -1,72 +1,49 @@
-const Car = require('../models/car.model');
-const logger = require('../middlewares/logger');
+const Car = require('../models/car.model')
 
-const getAll = async (req, res) => {
+async function getAll(req, res, next) {
   try {
-    const cars = await Car.find();
-    logger.info('GET /cars - success');
-    res.json(cars);
+    const cars = await Car.find().sort({ createdAt: -1 })
+    res.json(cars)
   } catch (err) {
-    logger.error(`GET /cars - ${err.message}`);
-    res.status(500).json({ error: 'Server error' });
+    next(err)
   }
-};
+}
 
-const create = async (req, res) => {
+async function create(req, res, next) {
   try {
-    const car = new Car(req.body);
-    await car.save();
-    logger.info('POST /cars - created');
-    res.status(201).json(car);
-  } catch (err) {
-    logger.error(`POST /cars - ${err.message}`);
-    res.status(400).json({ error: 'Invalid input' });
-  }
-};
-
-const getById = async (req, res) => {
-  try {
-    const car = await Car.findById(req.params.id);
-    if (!car) {
-      logger.warn(`GET /cars/${req.params.id} - not found`);
-      return res.status(404).json({ error: 'Car not found' });
+    const { make, model, year } = req.body
+    if (!make || !model || !year) {
+      return res.status(400).json({ error: 'make, model, year required' })
     }
-    logger.info(`GET /cars/${req.params.id} - success`);
-    res.json(car);
+    const car = new Car(req.body)
+    await car.save()
+    res.status(201).json(car)
   } catch (err) {
-    logger.error(`GET /cars/${req.params.id} - ${err.message}`);
-    res.status(500).json({ error: 'Server error' });
+    next(err)
   }
-};
+}
 
-const update = async (req, res) => {
+async function update(req, res, next) {
   try {
-    const car = await Car.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!car) {
-      logger.warn(`PUT /cars/${req.params.id} - not found`);
-      return res.status(404).json({ error: 'Car not found' });
-    }
-    logger.info(`PUT /cars/${req.params.id} - updated`);
-    res.json(car);
+    const updated = await Car.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    })
+    if (!updated) return res.status(404).json({ error: 'Not found' })
+    res.json(updated)
   } catch (err) {
-    logger.error(`PUT /cars/${req.params.id} - ${err.message}`);
-    res.status(500).json({ error: 'Server error' });
+    next(err)
   }
-};
+}
 
-const remove = async (req, res) => {
+async function remove(req, res, next) {
   try {
-    const car = await Car.findByIdAndDelete(req.params.id);
-    if (!car) {
-      logger.warn(`DELETE /cars/${req.params.id} - not found`);
-      return res.status(404).json({ error: 'Car not found' });
-    }
-    logger.info(`DELETE /cars/${req.params.id} - deleted`);
-    res.json({ message: 'Car deleted successfully' });
+    const deleted = await Car.findByIdAndDelete(req.params.id)
+    if (!deleted) return res.status(404).json({ error: 'Not found' })
+    res.json({ message: 'Deleted' })
   } catch (err) {
-    logger.error(`DELETE /cars/${req.params.id} - ${err.message}`);
-    res.status(500).json({ error: 'Server error' });
+    next(err)
   }
-};
+}
 
-module.exports = { getAll, create, getById, update, remove };
+module.exports = { getAll, create, update, remove }
